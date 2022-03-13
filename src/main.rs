@@ -10,6 +10,14 @@ async fn main() {
 }
 
 async fn show_instances(client: &aws_sdk_ec2::Client) -> Result<(), aws_sdk_ec2::Error> {
+    let instances = list_instances(client).await?;
+    for i in instances {
+        println!("instance ID = {}", i)
+    }
+    Ok(())
+}
+
+async fn list_instances(client: &aws_sdk_ec2::Client) -> Result<std::vec::Vec<String>, aws_sdk_ec2::Error> {
     let describe_instances = client.
         describe_instances().
         send().
@@ -17,13 +25,10 @@ async fn show_instances(client: &aws_sdk_ec2::Client) -> Result<(), aws_sdk_ec2:
 
     let reservations = describe_instances.reservations.unwrap_or_default();
 
-    let instances = reservations.iter().flat_map(|r| {
-        r.instances.as_ref().unwrap().iter().flat_map(|i| &i.instance_id)
-    });
+    let instances = reservations.iter().flat_map(|r|
+        r.instances.as_ref().unwrap().iter().flat_map(|i|
+            i.instance_id.clone()
+        ));
 
-    for i in instances {
-        println!("owner_id = {}", i)
-    }
-
-    Ok(())
+    Ok(instances.collect())
 }
