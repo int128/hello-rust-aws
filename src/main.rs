@@ -2,15 +2,18 @@
 async fn main() {
     let shared_config = aws_config::load_from_env().await;
     let client = aws_sdk_ec2::Client::new(&shared_config);
-    show_instances(&client).await
+
+    match show_instances(&client).await {
+        Ok(_) => (),
+        Err(e) => println!("error: {}", e),
+    }
 }
 
-async fn show_instances(client: &aws_sdk_ec2::Client) {
+async fn show_instances(client: &aws_sdk_ec2::Client) -> Result<(), aws_sdk_ec2::Error> {
     let describe_instances = client.
         describe_instances().
         send().
-        await.
-        unwrap();
+        await?;
 
     let reservations = describe_instances.reservations.unwrap_or_default();
 
@@ -21,4 +24,6 @@ async fn show_instances(client: &aws_sdk_ec2::Client) {
     for i in instances {
         println!("owner_id = {}", i)
     }
+
+    Ok(())
 }
